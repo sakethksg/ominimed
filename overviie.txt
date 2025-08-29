@@ -1,0 +1,52 @@
+Of course. Here is a combined and unified technical overview of the Omni-Med platform, integrating the hardware design and the autonomous navigation stack into a single, cohesive document.
+
+*
+
+### ## Omni-Med Platform: A Unified Technical Overview
+
+The Omni-Med platform is a medical-grade mobility solution engineered from the ground up to provide unprecedented agility, precision, and intelligence. Unlike traditional devices where mobility is an afterthought, Omni-Med's design philosophy is based on the deep integration of a custom-built hardware body with an advanced autonomous mind, creating a single, cohesive robotic instrument.
+
+---
+
+### ## Hardware Platform: The Agile Body 🦾
+
+The physical platform is engineered around three pillars: extreme compactness, uncompromising precision, and seamless integration. It provides the reliable physical foundation upon which the advanced navigation software operates.
+
+#### ### The Drive System: An Agile Heart
+At the core of the platform are our custom *Co-Axial Swerve Modules. By stacking the steering and drive motors vertically, this design cuts the footprint of each drive unit by nearly 50%, enabling an incredibly low profile. This is paired with high-torque *"pancake" motors** and *zero-backlash harmonic drives*, which deliver silent, fluid, and millimeter-perfect motion without the "slop" or vibration of traditional gears.
+
+
+
+#### ### The Electronics: An Integrated Nervous System
+Instead of a complex web of separate components, the platform uses a single, *custom all-in-one PCB*. This board houses the central computer, all eight motor controllers, and the sensor fusion hub required for the navigation stack. This radically simplifies the system, reduces points of failure, and shrinks the entire electronics package into a single, reliable layer.
+
+#### ### The Unibody Frame: A Purpose-Built Chassis
+All components are housed in a *monocoque chassis*, machined from a single block of aircraft-grade aluminum. Like a high-performance car, the frame itself is the structure, making it incredibly lightweight, rigid, and space-efficient. It's designed with integrated mounting for the full sensor suite—including the 360° LiDAR, Depth Camera, and IMU—ensuring all components work together seamlessly.
+
+---
+
+### ## Autonomous Navigation Stack: The Intelligent Mind 🧠
+
+The navigation stack is developed on the *ROS 2 (Robot Operating System 2)* framework, using a hierarchical architecture that enhances safety and predictability.
+
+#### ### Perception & Localization
+This layer determines "Where am I?" and "What's around me?".
+* *State Estimation:* An *Extended Kalman Filter (EKF)* fuses data from wheel odometry, the IMU, and LiDAR scans to produce a smooth and accurate estimate of the robot's state.
+* *Mapping & Localization:* The environment is mapped using *SLAM. For real-time tracking within that map, the system uses an **Adaptive Monte Carlo Localization (AMCL)* algorithm for precise global positioning.
+
+#### ### Global Path Planner
+This module finds the optimal, high-level route through the known environment.
+* *Algorithm:* We'll use the *Smac Planner (Hybrid-A)*. Unlike standard planners, Hybrid-A\ considers the robot's swerve-drive kinematics, generating paths that are inherently smooth and efficient from the start.
+
+#### ### Local Planner & Controller (Recurrent Deep Reinforcement Learning Agent)
+This is the intelligent core that tracks the global path while dynamically avoiding obstacles. It's implemented as a custom ROS 2 controller plugin.
+* *Model Architecture:* A *Recurrent Actor-Critic Model* processes multiple sensor inputs in real-time.
+    * *Inputs:* A *Depth Camera* feed is processed by a lightweight *CNN* (e.g., MobileNetV2), a 360° *LiDAR* scan is processed by a *1D-CNN*, and robot state data (velocity, goal waypoints) is ingested directly.
+    * *Memory Core:* An *LSTM (Long Short-Term Memory)* layer processes sequences of this fused data, allowing the model to understand the motion of its surroundings and predict the intent of dynamic obstacles.
+    * *Output:* An *Actor Head* outputs the desired chassis velocity command (forward/backward, sideways, and rotation), while a *Critic Head* evaluates the state for training.
+* *Training Strategy:* The model will be trained using *Soft Actor-Critic (SAC)* in the *NVIDIA Isaac Sim* environment. *Domain randomization* (varying lighting, textures, sensor noise) will be used to ensure the learned policy transfers robustly from simulation to the real-world hardware.
+
+
+
+#### ### Safety & Monitoring Layer
+A dedicated *Safety Node* runs in parallel with the navigation stack. It has executive authority to bypass the planner and issue an *emergency stop* command if its low-level checks detect an imminent collision risk or system fault, ensuring a fundamental layer of safety.
